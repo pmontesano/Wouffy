@@ -83,8 +83,11 @@ print('Test data cleaned up');
         """Run a single API test"""
         url = f"{self.base_url}/api/{endpoint}"
         test_headers = {'Content-Type': 'application/json'}
+        cookies = {}
         
         if self.token:
+            # Try both cookie and header auth
+            cookies['session_token'] = self.token
             test_headers['Authorization'] = f'Bearer {self.token}'
         if headers:
             test_headers.update(headers)
@@ -92,16 +95,17 @@ print('Test data cleaned up');
         self.tests_run += 1
         print(f"\n🔍 Testing {name}...")
         print(f"   URL: {method} {url}")
+        print(f"   Token: {self.token[:20] if self.token else 'None'}...")
         
         try:
             if method == 'GET':
-                response = requests.get(url, headers=test_headers)
+                response = requests.get(url, headers=test_headers, cookies=cookies)
             elif method == 'POST':
-                response = requests.post(url, json=data, headers=test_headers)
+                response = requests.post(url, json=data, headers=test_headers, cookies=cookies)
             elif method == 'PATCH':
-                response = requests.patch(url, json=data, headers=test_headers)
+                response = requests.patch(url, json=data, headers=test_headers, cookies=cookies)
             elif method == 'PUT':
-                response = requests.put(url, json=data, headers=test_headers)
+                response = requests.put(url, json=data, headers=test_headers, cookies=cookies)
 
             success = response.status_code == expected_status
             if success:
