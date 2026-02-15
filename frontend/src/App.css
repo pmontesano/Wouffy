@@ -1,34 +1,92 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+.App {
+  min-height: 100vh;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+.btn-primary {
+  background: #88D8B0;
+  color: white;
+  padding: 0.75rem 2rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  transition: transform 0.2s, background 0.2s;
+  box-shadow: 0 4px 14px 0 rgba(136, 216, 176, 0.39);
+  border: none;
+  cursor: pointer;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+.btn-primary:hover {
+  background: #6FCF9F;
+  transform: scale(1.05);
 }
 
-.App-link {
-    color: #61dafb;
+.btn-primary:active {
+  transform: scale(0.95);
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+.btn-secondary {
+  background: #FFCC99;
+  color: #5A3A20;
+  padding: 0.75rem 2rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  transition: transform 0.2s, background 0.2s;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: #FFBF80;
+  transform: scale(1.05);
+}
+
+.btn-secondary:active {
+  transform: scale(0.95);
+}
+
+.card-hover {
+  transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.card-hover:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.glass-card {
+  backdrop-filter: blur(24px);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.status-requested {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.status-accepted {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.status-rejected {
+  background: #FEE2E2;
+  color: #991B1B;
+}
+
+.status-cancelled {
+  background: #E5E7EB;
+  color: #374151;
+}
+
+.status-completed {
+  background: #DBEAFE;
+  color: #1E40AF;
 }
