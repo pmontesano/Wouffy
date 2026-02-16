@@ -296,9 +296,7 @@ async def get_walker(walker_id: str):
     return WalkerProfile(**walker)
 
 @api_router.get("/walkers/me/profile", response_model=WalkerProfile)
-async def get_my_walker_profile(current_user: User = None):
-    current_user = await get_current_user()
-    
+async def get_my_walker_profile(current_user: User = Depends(get_current_user)):
     walker = await db.walker_profiles.find_one({"user_id": current_user.user_id}, {"_id": 0})
     if not walker:
         raise HTTPException(status_code=404, detail="Perfil de paseador no encontrado")
