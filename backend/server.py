@@ -230,12 +230,9 @@ async def exchange_session(x_session_id: str = Header(...)):
     return response
 
 @api_router.get("/auth/me")
-async def get_me(current_user: User = None):
-    try:
-        current_user = await get_current_user()
-        return current_user
-    except:
-        raise HTTPException(status_code=401, detail="No autenticado")
+async def get_me(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    current_user = await get_current_user(session_token, authorization)
+    return current_user
 
 @api_router.post("/auth/logout")
 async def logout(session_token: Optional[str] = Cookie(None)):
