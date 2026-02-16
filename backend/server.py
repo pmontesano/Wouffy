@@ -339,9 +339,7 @@ async def create_walker_profile(profile: WalkerProfileCreate, current_user: User
     return WalkerProfile(**walker)
 
 @api_router.put("/walkers/me/profile", response_model=WalkerProfile)
-async def update_walker_profile(profile: WalkerProfileCreate, current_user: User = None):
-    current_user = await get_current_user()
-    
+async def update_walker_profile(profile: WalkerProfileCreate, current_user: User = Depends(get_current_user)):
     if current_user.role != UserRole.WALKER:
         raise HTTPException(status_code=403, detail="Solo usuarios con rol WALKER pueden actualizar perfil de paseador")
     
