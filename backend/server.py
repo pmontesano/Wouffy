@@ -309,9 +309,7 @@ async def get_my_walker_profile(current_user: User = Depends(get_current_user)):
     return WalkerProfile(**walker)
 
 @api_router.post("/walkers/me/profile", response_model=WalkerProfile)
-async def create_walker_profile(profile: WalkerProfileCreate, current_user: User = None):
-    current_user = await get_current_user()
-    
+async def create_walker_profile(profile: WalkerProfileCreate, current_user: User = Depends(get_current_user)):
     if current_user.role != UserRole.WALKER:
         raise HTTPException(status_code=403, detail="Solo usuarios con rol WALKER pueden crear perfil de paseador")
     
