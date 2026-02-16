@@ -410,9 +410,7 @@ async def get_my_walks(current_user: User = Depends(get_current_user)):
     return walks
 
 @api_router.get("/walks/incoming", response_model=List[Walk])
-async def get_incoming_walks(current_user: User = None):
-    current_user = await get_current_user()
-    
+async def get_incoming_walks(current_user: User = Depends(get_current_user)):
     if current_user.role != UserRole.WALKER:
         raise HTTPException(status_code=403, detail="Solo usuarios con rol WALKER pueden ver solicitudes entrantes")
     
