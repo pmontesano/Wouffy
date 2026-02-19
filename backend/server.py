@@ -56,6 +56,55 @@ class User(BaseModel):
     role: Optional[UserRole] = None
     created_at: datetime
 
+class UserProfile(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    profile_id: str = Field(default_factory=lambda: f"profile_{uuid.uuid4().hex[:12]}")
+    user_id: str
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    address_text: Optional[str] = None
+    city: Optional[str] = None
+    avatar_url: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+class UserProfileUpdate(BaseModel):
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    address_text: Optional[str] = None
+    city: Optional[str] = None
+    avatar_url: Optional[str] = None
+
+class PetModel(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    pet_id: str = Field(default_factory=lambda: f"pet_{uuid.uuid4().hex[:12]}")
+    owner_user_id: str
+    name: str
+    species: PetSpecies
+    size: PetSize
+    age_years: Optional[int] = None
+    notes: Optional[str] = None
+    photo_url: Optional[str] = None
+    is_default: bool = False
+    created_at: datetime
+    updated_at: datetime
+
+class PetCreate(BaseModel):
+    name: str
+    species: PetSpecies
+    size: PetSize
+    age_years: Optional[int] = None
+    notes: Optional[str] = None
+    photo_url: Optional[str] = None
+
+class PetUpdate(BaseModel):
+    name: Optional[str] = None
+    species: Optional[PetSpecies] = None
+    size: Optional[PetSize] = None
+    age_years: Optional[int] = None
+    notes: Optional[str] = None
+    photo_url: Optional[str] = None
+
 class UserSession(BaseModel):
     model_config = ConfigDict(extra="ignore")
     session_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
