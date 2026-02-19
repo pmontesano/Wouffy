@@ -314,6 +314,230 @@ async def update_role(role_update: RoleUpdate, current_user: User = Depends(get_
     
     return User(**user_doc)
 
+# Profile Endpoints
+@api_router.get("/me/profile", response_model=UserProfile)
+async def get_my_profile(current_user: User = Depends(get_current_user)):
+    profile = await db.user_profiles.find_one({"user_id": current_user.user_id}, {"_id": 0})
+    
+    if not profile:
+        # Si no existe, crear uno vacío
+        profile_doc = {
+            "profile_id": f"profile_{uuid.uuid4().hex[:12]}",
+            "user_id": current_user.user_id,
+            "full_name": current_user.name,
+            "phone": None,
+            "address_text": None,
+            "city": None,
+            "avatar_url": current_user.picture,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.user_profiles.insert_one(profile_doc)
+        profile = await db.user_profiles.find_one({"user_id": current_user.user_id}, {"_id": 0})
+    
+    if isinstance(profile["created_at"], str):
+        profile["created_at"] = datetime.fromisoformat(profile["created_at"])
+    if isinstance(profile["updated_at"], str):
+        profile["updated_at"] = datetime.fromisoformat(profile["updated_at"])
+    
+    return UserProfile(**profile)
+
+@api_router.put("/me/profile", response_model=UserProfile)
+async def update_my_profile(profile_update: UserProfileUpdate, current_user: User = Depends(get_current_user)):
+    existing_profile = await db.user_profiles.find_one({"user_id": current_user.user_id}, {"_id": 0})
+    
+    update_data = profile_update.model_dump(exclude_unset=True)
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    if not existing_profile:
+        # Crear nuevo perfil
+        profile_doc = {
+            "profile_id": f"profile_{uuid.uuid4().hex[:12]}",
+            "user_id": current_user.user_id,
+            "full_name": update_data.get("full_name", current_user.name),
+            "phone": update_data.get("phone"),
+            "address_text": update_data.get("address_text"),
+            "city": update_data.get("city"),
+            "avatar_url": update_data.get("avatar_url", current_user.picture),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.user_profiles.insert_one(profile_doc)
+    else:
+        # Actualizar perfil existente
+        await db.user_profiles.update_one(
+            {"user_id": current_user.user_id},
+            {"$set": update_data}
+        )
+    
+    profile = await db.user_profiles.find_one({"user_id": current_user.user_id}, {"_id": 0})
+    if isinstance(profile["created_at"], str):
+        profile["created_at"] = datetime.fromisoformat(profile["created_at"])
+    if isinstance(profile["updated_at"], str):
+        profile["updated_at"] = datetime.fromisoformat(profile["updated_at"])
+    
+    return UserProfile(**profile)
+
+# Pet Endpoints
+@api_router.get("/me/pets", response_model=List[PetModel])
+async def get_my_pets(current_user: User = Depends(get_current_user)):
+    if current_user.role != UserRole.OWNER:
+        raise HTTPException(status_code=403, detail="Solo usuarios con rol OWNER pueden gestionar mascotas")
+    
+    pets = await db.pets.find({"owner_user_id": current_user.user_id}, {"_id": 0}).to_list(100)
+    
+    for pet in pets:
+        if isinstance(pet["created_at"], str):
+            pet["created_at"] = datetime.fromisoformat(pet["created_at"])
+        if isinstance(pet["updated_at"], str):
+            pet["updated_at"] = datetime.fromisoformat(pet["updated_at"])
+    
+    return pets
+
+@api_router.post("/me/pets", response_model=PetModel)
+async def create_pet(pet_create: PetCreate, current_user: User = Depends(get_current_user)):
+    if current_user.role != UserRole.OWNER:
+        raise HTTPException(status_code=403, detail="Solo usuarios con rol OWNER pueden crear mascotas")
+    
+    # Validación: si es perro, size es requerido
+    if pet_create.species == PetSpecies.DOG and not pet_create.size:
+        raise HTTPException(status_code=422, detail="El tamaño es requerido para perros")
+    
+    pet_doc = {
+        "pet_id": f"pet_{uuid.uuid4().hex[:12]}",
+        "owner_user_id": current_user.user_id,
+        **pet_create.model_dump(),
+        "is_default": False,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.pets.insert_one(pet_doc)
+    
+    # Si es la primera mascota, marcarla como default
+    pet_count = await db.pets.count_documents({"owner_user_id": current_user.user_id})
+    if pet_count == 1:
+        await db.pets.update_one(
+            {"pet_id": pet_doc["pet_id"]},
+            {"$set": {"is_default": True}}
+        )
+    
+    pet = await db.pets.find_one({"pet_id": pet_doc["pet_id"]}, {"_id": 0})
+    if isinstance(pet["created_at"], str):
+        pet["created_at"] = datetime.fromisoformat(pet["created_at"])
+    if isinstance(pet["updated_at"], str):
+        pet["updated_at"] = datetime.fromisoformat(pet["updated_at"])
+    
+    return PetModel(**pet)
+
+@api_router.get("/me/pets/{pet_id}", response_model=PetModel)
+async def get_pet(pet_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role != UserRole.OWNER:
+        raise HTTPException(status_code=403, detail="Solo usuarios con rol OWNER pueden ver mascotas")
+    
+    pet = await db.pets.find_one({"pet_id": pet_id, "owner_user_id": current_user.user_id}, {"_id": 0})
+    
+    if not pet:
+        raise HTTPException(status_code=404, detail="Mascota no encontrada")
+    
+    if isinstance(pet["created_at"], str):
+        pet["created_at"] = datetime.fromisoformat(pet["created_at"])
+    if isinstance(pet["updated_at"], str):
+        pet["updated_at"] = datetime.fromisoformat(pet["updated_at"])
+    
+    return PetModel(**pet)
+
+@api_router.put("/me/pets/{pet_id}", response_model=PetModel)
+async def update_pet(pet_id: str, pet_update: PetUpdate, current_user: User = Depends(get_current_user)):
+    if current_user.role != UserRole.OWNER:
+        raise HTTPException(status_code=403, detail="Solo usuarios con rol OWNER pueden editar mascotas")
+    
+    pet = await db.pets.find_one({"pet_id": pet_id, "owner_user_id": current_user.user_id}, {"_id": 0})
+    
+    if not pet:
+        raise HTTPException(status_code=404, detail="Mascota no encontrada")
+    
+    update_data = pet_update.model_dump(exclude_unset=True)
+    
+    # Validación: si cambia a perro, size es requerido
+    species = update_data.get("species", pet.get("species"))
+    size = update_data.get("size", pet.get("size"))
+    if species == PetSpecies.DOG and not size:
+        raise HTTPException(status_code=422, detail="El tamaño es requerido para perros")
+    
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.pets.update_one(
+        {"pet_id": pet_id, "owner_user_id": current_user.user_id},
+        {"$set": update_data}
+    )
+    
+    updated_pet = await db.pets.find_one({"pet_id": pet_id}, {"_id": 0})
+    if isinstance(updated_pet["created_at"], str):
+        updated_pet["created_at"] = datetime.fromisoformat(updated_pet["created_at"])
+    if isinstance(updated_pet["updated_at"], str):
+        updated_pet["updated_at"] = datetime.fromisoformat(updated_pet["updated_at"])
+    
+    return PetModel(**updated_pet)
+
+@api_router.delete("/me/pets/{pet_id}")
+async def delete_pet(pet_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role != UserRole.OWNER:
+        raise HTTPException(status_code=403, detail="Solo usuarios con rol OWNER pueden eliminar mascotas")
+    
+    pet = await db.pets.find_one({"pet_id": pet_id, "owner_user_id": current_user.user_id}, {"_id": 0})
+    
+    if not pet:
+        raise HTTPException(status_code=404, detail="Mascota no encontrada")
+    
+    was_default = pet.get("is_default", False)
+    
+    result = await db.pets.delete_one({"pet_id": pet_id, "owner_user_id": current_user.user_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Mascota no encontrada")
+    
+    # Si era default, marcar otra como default
+    if was_default:
+        remaining_pets = await db.pets.find({"owner_user_id": current_user.user_id}, {"_id": 0}).to_list(1)
+        if remaining_pets:
+            await db.pets.update_one(
+                {"pet_id": remaining_pets[0]["pet_id"]},
+                {"$set": {"is_default": True}}
+            )
+    
+    return {"message": "Mascota eliminada correctamente"}
+
+@api_router.patch("/me/pets/{pet_id}/default", response_model=PetModel)
+async def set_default_pet(pet_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role != UserRole.OWNER:
+        raise HTTPException(status_code=403, detail="Solo usuarios con rol OWNER pueden gestionar mascotas")
+    
+    pet = await db.pets.find_one({"pet_id": pet_id, "owner_user_id": current_user.user_id}, {"_id": 0})
+    
+    if not pet:
+        raise HTTPException(status_code=404, detail="Mascota no encontrada")
+    
+    # Desmarcar todas las mascotas como default
+    await db.pets.update_many(
+        {"owner_user_id": current_user.user_id},
+        {"$set": {"is_default": False}}
+    )
+    
+    # Marcar esta como default
+    await db.pets.update_one(
+        {"pet_id": pet_id},
+        {"$set": {"is_default": True, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    updated_pet = await db.pets.find_one({"pet_id": pet_id}, {"_id": 0})
+    if isinstance(updated_pet["created_at"], str):
+        updated_pet["created_at"] = datetime.fromisoformat(updated_pet["created_at"])
+    if isinstance(updated_pet["updated_at"], str):
+        updated_pet["updated_at"] = datetime.fromisoformat(updated_pet["updated_at"])
+    
+    return PetModel(**updated_pet)
+
 # Walker Endpoints
 @api_router.get("/walkers", response_model=List[WalkerProfile])
 async def get_walkers(
