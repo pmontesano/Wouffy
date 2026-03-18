@@ -11,6 +11,24 @@ export const api = axios.create({
   },
 });
 
+// Interceptor para manejar 401 (sesión expirada)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Limpiar cookie y redirigir a login
+      document.cookie = 'session_token=; path=/; max-age=0';
+      
+      // Solo redirigir si no estamos ya en login o callback
+      if (!window.location.pathname.includes('/login') && 
+          !window.location.pathname.includes('/auth/callback')) {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const setAuthToken = (token) => {
   if (token) {
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;

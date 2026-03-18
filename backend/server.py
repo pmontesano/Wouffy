@@ -292,6 +292,12 @@ async def get_me(session_token: Optional[str] = Cookie(None), authorization: Opt
     current_user = await get_current_user(session_token, authorization)
     return current_user
 
+# Alias para compatibilidad
+@api_router.get("/me")
+async def get_me_alias(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    current_user = await get_current_user(session_token, authorization)
+    return current_user
+
 @api_router.post("/auth/logout")
 async def logout(session_token: Optional[str] = Cookie(None)):
     if session_token:

@@ -37,7 +37,8 @@ export default function AuthCallback() {
         } else if (userData.role === 'WALKER') {
           navigate('/walker/requests', { state: { user: userData } });
         } else {
-          navigate('/walkers', { state: { user: userData } });
+          // OWNER: redirigir a cuenta
+          navigate('/app/account', { state: { user: userData } });
         }
       } catch (error) {
         console.error('Error procesando autenticación:', error);
