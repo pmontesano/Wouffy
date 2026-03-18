@@ -1,5 +1,6 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Cookie, Header, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, Cookie, Header, Depends, UploadFile, File
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -12,6 +13,9 @@ import uuid
 from datetime import datetime, timezone, timedelta
 import httpx
 from enum import Enum
+
+import os
+import shutil
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -82,7 +86,7 @@ class PetModel(BaseModel):
     name: str
     species: PetSpecies
     size: PetSize
-    age_years: Optional[int] = None
+    date_of_birth: Optional[str] = None  # Formato: YYYY-MM-DD
     notes: Optional[str] = None
     photo_url: Optional[str] = None
     is_default: bool = False
@@ -93,7 +97,7 @@ class PetCreate(BaseModel):
     name: str
     species: PetSpecies
     size: PetSize
-    age_years: Optional[int] = None
+    date_of_birth: Optional[str] = None  # Formato: YYYY-MM-DD
     notes: Optional[str] = None
     photo_url: Optional[str] = None
 
@@ -101,7 +105,7 @@ class PetUpdate(BaseModel):
     name: Optional[str] = None
     species: Optional[PetSpecies] = None
     size: Optional[PetSize] = None
-    age_years: Optional[int] = None
+    date_of_birth: Optional[str] = None  # Formato: YYYY-MM-DD
     notes: Optional[str] = None
     photo_url: Optional[str] = None
 
@@ -383,6 +387,44 @@ async def update_my_profile(profile_update: UserProfileUpdate, current_user: Use
         profile["updated_at"] = datetime.fromisoformat(profile["updated_at"])
     
     return UserProfile(**profile)
+
+# Upload Endpoints
+@api_router.post("/upload/pet-photo")
+async def upload_pet_photo(file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
+    if current_user.role != UserRole.OWNER:
+        raise HTTPException(status_code=403, detail="Solo usuarios con rol OWNER pueden subir fotos")
+    
+    # Validar tipo de archivo
+    allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=422, detail="Tipo de archivo no permitido. Solo se permiten imágenes JPG, PNG o WEBP")
+    
+    # Validar tamaño (máximo 5MB)
+    file_size = 0
+    chunk_size = 1024 * 1024  # 1MB
+    for chunk in iter(lambda: file.file.read(chunk_size), b''):
+        file_size += len(chunk)
+        if file_size > 5 * 1024 * 1024:  # 5MB
+            raise HTTPException(status_code=422, detail="El archivo es demasiado grande. Máximo 5MB")
+    
+    file.file.seek(0)  # Reset file pointer
+    
+    # Generar nombre único para el archivo
+    file_extension = file.filename.split('.')[-1]
+    unique_filename = f"{uuid.uuid4().hex[:12]}.{file_extension}"
+    
+    # Guardar archivo
+    upload_dir = os.path.join(os.path.dirname(__file__), "uploads", "pets")
+    os.makedirs(upload_dir, exist_ok=True)
+    file_path = os.path.join(upload_dir, unique_filename)
+    
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    # Retornar URL relativa
+    photo_url = f"/uploads/pets/{unique_filename}"
+    
+    return {"photo_url": photo_url, "message": "Foto subida correctamente"}
 
 # Pet Endpoints
 @api_router.get("/me/pets", response_model=List[PetModel])
@@ -808,6 +850,11 @@ async def cancel_walk(walk_id: str, current_user: User = None):
     return Walk(**updated_walk)
 
 app.include_router(api_router)
+
+# Servir archivos estáticos (uploads)
+uploads_dir = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(uploads_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 app.add_middleware(
     CORSMiddleware,

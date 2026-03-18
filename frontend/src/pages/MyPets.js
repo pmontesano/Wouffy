@@ -85,6 +85,29 @@ export default function MyPets() {
     }
   };
 
+  const calculateAge = (dateOfBirth) => {
+    if (!dateOfBirth) return null;
+    
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+    
+    let years = today.getFullYear() - birthDate.getFullYear();
+    let months = today.getMonth() - birthDate.getMonth();
+    
+    if (months < 0) {
+      years--;
+      months += 12;
+    }
+    
+    if (years === 0) {
+      return `${months} ${months === 1 ? 'mes' : 'meses'}`;
+    } else if (months === 0) {
+      return `${years} ${years === 1 ? 'año' : 'años'}`;
+    } else {
+      return `${years} ${years === 1 ? 'año' : 'años'} y ${months} ${months === 1 ? 'mes' : 'meses'}`;
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -186,10 +209,10 @@ export default function MyPets() {
                       <span className="text-gray-600">Tamaño:</span>
                       <span className="font-semibold">{getSizeLabel(pet.size)}</span>
                     </div>
-                    {pet.age_years && (
+                    {pet.date_of_birth && (
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-600">Edad:</span>
-                        <span className="font-semibold">{pet.age_years} {pet.age_years === 1 ? 'año' : 'años'}</span>
+                        <span className="font-semibold">{calculateAge(pet.date_of_birth)}</span>
                       </div>
                     )}
                   </div>

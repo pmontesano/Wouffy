@@ -16,7 +16,7 @@ Como el flujo de autenticación con Google requiere interacción humana real, he
 2. Abrí la consola del navegador (presiona `F12`)
 3. En la pestaña "Console", pegá este comando y presiona Enter:
 ```javascript
-document.cookie = 'session_token=demo_session_owner_4a116cccaa97; path=/; max-age=2592000'
+document.cookie = 'session_token=demo_session_owner_824c33b6f56a; path=/; max-age=2592000'
 ```
 4. Recargá la página (`F5` o `Ctrl+R`)
 5. ¡Ya estás autenticado como OWNER!
@@ -24,6 +24,8 @@ document.cookie = 'session_token=demo_session_owner_4a116cccaa97; path=/; max-ag
 **Funcionalidades disponibles como OWNER:**
 - ✅ Ver y editar tu cuenta en "Mi Cuenta"
 - ✅ Gestionar tus mascotas (crear/editar/eliminar)
+- ✅ **NUEVO**: Subir fotos reales de tus mascotas 📸
+- ✅ **NUEVO**: Fecha de nacimiento con cálculo automático de edad (años y meses) 🎂
 - ✅ Marcar mascota predeterminada
 - ✅ Buscar paseadores con mapa interactivo y filtros
 - ✅ Ver perfiles detallados de paseadores
@@ -42,7 +44,7 @@ document.cookie = 'session_token=; path=/; max-age=0'
 2. Abrí la consola del navegador (`F12`)
 3. En la pestaña "Console", pegá este comando:
 ```javascript
-document.cookie = 'session_token=demo_session_walker_fbac15bd7df9; path=/; max-age=2592000'
+document.cookie = 'session_token=demo_session_walker_fc5c8b8bd3be; path=/; max-age=2592000'
 ```
 4. Recargá la página
 5. ¡Ya estás autenticado como WALKER!
