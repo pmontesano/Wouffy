@@ -80,6 +80,14 @@ export default function PetForm() {
       return;
     }
 
+    // Mostrar preview LOCAL inmediatamente
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+
+    // Subir al servidor
     setUploading(true);
     const formDataUpload = new FormData();
     formDataUpload.append('file', file);
@@ -93,11 +101,13 @@ export default function PetForm() {
 
       const photoUrl = `${process.env.REACT_APP_BACKEND_URL}${response.data.photo_url}`;
       setFormData(prev => ({ ...prev, photo_url: photoUrl }));
-      setImagePreview(photoUrl);
       toast.success('¡Foto subida correctamente!');
     } catch (error) {
       console.error('Error al subir foto:', error);
       toast.error(error.response?.data?.detail || 'Error al subir la foto');
+      // Limpiar preview si falla
+      setImagePreview(null);
+      setFormData(prev => ({ ...prev, photo_url: '' }));
     } finally {
       setUploading(false);
     }
