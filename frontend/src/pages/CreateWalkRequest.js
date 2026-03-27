@@ -47,6 +47,7 @@ export default function CreateWalkRequest() {
     return () => clearInterval(id);
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const now = useMemo(() => new Date(), [scheduleTick]);
 
   const walkerRange = useMemo(() => getWalkerTimeRange(walker), [walker]);
